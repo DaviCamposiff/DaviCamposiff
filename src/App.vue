@@ -1,89 +1,90 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import HelloWorld from './components/HelloWorld.vue'
+import { ref, watch } from "vue";
+import NovaLista from "./components/NovaLista.vue";
+import ListaTarefas from "./components/ListaTarefas.vue";
 
-interface Item {
-  id: number
-  texto: string
+export interface Tarefa {
+  id: number;
+  texto: string;
+  concluida: boolean;
 }
 
-const vetor = ref<Item[]>([])
-const texto = ref("")
-let proximoId = 1
+export interface Lista {
+  id: number;
+  titulo: string;
+  tarefas: Tarefa[];
+}
 
-function adicionarVue() {
-  if (texto.value.trim() === "") return
+const listas = ref<Lista[]>([]);
 
-  vetor.value.push({
-    id: proximoId++,
-    texto: texto.value
-  })
+// Carrega do localStorage
+const dados = localStorage.getItem("listas");
+if (dados) {
+  listas.value = JSON.parse(dados);
+}
 
-  texto.value = ""
+// Salva automaticamente
+watch(
+  listas,
+  () => {
+    localStorage.setItem("listas", JSON.stringify(listas.value));
+  },
+  { deep: true }
+);
+
+function criarLista(titulo: string) {
+  listas.value.push({
+    id: Date.now(),
+    titulo,
+    tarefas: [],
+  });
+}
+
+function removerLista(id: number) {
+  listas.value = listas.value.filter((l) => l.id !== id);
 }
 </script>
 
 <template>
-  <header v-for="item in vetor" :key="item.id">
-    <img
-      alt="Vue logo"
-      class="logo"
-      src="./assets/logo.svg"
-      width="125"
-      height="125"
-    />
+  <div class="container">
+    <h1>📋 Organizador de Tarefas</h1>
 
-    <div class="wrapper">
-      <HelloWorld :msg="item.texto" />
+    <NovaLista @criar="criarLista" />
+
+    <div class="listas">
+      <ListaTarefas
+        v-for="lista in listas"
+        :key="lista.id"
+        :lista="lista"
+        @remover="removerLista"
+      />
     </div>
-  </header>
-
-  <main>
-    <input
-      v-model="texto"
-      placeholder="Digite uma mensagem"
-    />
-
-    <button @click="adicionarVue">
-      Novo Vue
-    </button>
-  </main>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<style>
+body {
+  margin: 0;
+  background: #eef2f7;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 30px;
 }
 
-input {
-  margin-right: 10px;
-  padding: 8px;
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
 }
 
-button {
-  padding: 8px 12px;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+.listas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
 }
 </style>
